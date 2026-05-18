@@ -1,6 +1,6 @@
 """
 ORS.py — Navigation via OpenRouteService + Nominatim geocoding.
-Accepts place names, not just raw coordinates.
+GPS coords now come from the server (phone WebSocket), not geocoder.
 """
 
 from routingpy import ORS
@@ -15,7 +15,7 @@ CACHE_FILE = "route_cache.json"
 
 
 def geocode(place_name: str) -> tuple | None:
-    """Converts a place name to (lon, lat). Returns None if not found."""
+    """Converts a place name like 'Cairo train station' to (lon, lat)."""
     try:
         loc = geocoder.geocode(place_name, timeout=5)
         if loc:
@@ -35,7 +35,10 @@ def reverse_geocode(lon: float, lat: float) -> str:
 
 
 def get_navigation_steps(start_coords: tuple, end_coords: tuple) -> list:
-    """Fetches walking directions from ORS. Falls back to cache if API fails."""
+    """
+    Fetches walking directions from ORS.
+    Falls back to cached route if API fails.
+    """
     try:
         route = client.directions(
             locations=[start_coords, end_coords],
@@ -68,7 +71,10 @@ def steps_to_speech(steps: list) -> list[str]:
 
 
 def navigate_to_place(place_name: str, current_coords: tuple) -> list[str]:
-    """High-level: name → geocode → route → spoken steps."""
+    """
+    High-level: place name → geocode → ORS route → spoken steps.
+    current_coords should come from server.get_gps() in vision.py.
+    """
     dest = geocode(place_name)
     if not dest:
         return [f"I could not find {place_name} on the map. Please try a different name."]
